@@ -74,7 +74,8 @@
   .cd-v { font-size:.86em; color:#20242e; font-weight:500; display:flex; align-items:center; gap:8px; }
   .cd-v.strong { font-weight:800; }
   .copy { color:#c2c7d6; font-size:.9em; cursor:default; }
-  .thumb { width:96px; height:118px; border-radius:8px; background:linear-gradient(160deg,#9aa0b0,#6b7280); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.6em; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+  .thumb { width:104px; height:126px; border-radius:8px; background:#fff; border:1px solid #e6e8f0; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+  .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .ok { color:#12b76a; }
   .lnk { color:var(--si); font-weight:600; }
 
@@ -125,8 +126,9 @@
   .sh-fno { margin-left:auto; font-size:.78em; color:#8890a3; font-weight:600; }
   .sh-meta { font-size:.8em; color:#5b6577; margin-bottom:4px; display:flex; align-items:center; gap:6px; }
   .sh-item { display:flex; align-items:center; gap:12px; padding-top:12px; margin-top:10px; border-top:1px solid var(--line); }
-  .sh-thumb { width:40px; height:40px; border-radius:8px; background:#0f1020; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sh-thumb { width:40px; height:40px; border-radius:8px; background:#fff; border:1px solid #e6e8f0; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .sh-thumb img { width:26px; height:26px; }
+  .sh-thumb img.sh-prod { width:100%; height:100%; object-fit:cover; }
   .sh-iname { font-size:.85em; font-weight:700; color:#20242e; }
   .sh-ivar { font-size:.76em; color:#8890a3; }
   .sh-iprice { text-align:right; font-size:.82em; color:#20242e; white-space:nowrap; }
@@ -198,7 +200,7 @@ function portal(status) {
       <div>
         <div class="cd-row"><div class="cd-k">Order Coverage:</div><div class="cd-v">$252.95 <span class="copy">⧉</span></div></div>
         <div class="cd-row"><div class="cd-k">Preferred Resolution:</div><div class="cd-v strong">Reship</div></div>
-        <div class="cd-row"><div class="cd-k">Images:</div><div class="cd-v"><span class="thumb">⌚</span></div></div>
+        <div class="cd-row"><div class="cd-k">Images:</div><div class="cd-v"><span class="thumb"><img src="damaged-watch.jpg" alt="Damaged item"></span></div></div>
       </div>
     </div>
   </div>
@@ -289,7 +291,7 @@ function shopify() {
           <div class="sh-meta">🗓 April 21, 2026</div>
           <div class="sh-meta">🏷 Amazon tracking: <span class="lnk">12345678910</span></div>
           <div class="sh-item">
-            <span class="sh-thumb" style="background:#3a2a1a;">⌚</span>
+            <span class="sh-thumb"><img class="sh-prod" src="product-watch.png" alt="Sapele Black Barrel 42mm"></span>
             <div style="flex:1;"><div class="sh-iname">Sapele Black Barrel 42mm</div><div class="sh-ivar">SAPELE BLACK · OG-11-104</div></div>
             <div class="sh-iprice">$0.00 <span style="color:#98a0b3;">× 1</span><br><span class="strike">$199.00</span> &nbsp;$0.00</div>
           </div>
