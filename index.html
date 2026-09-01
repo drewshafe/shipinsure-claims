@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShipInsure — How a Claim Works</title>
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/drewshafe/si-roi-calculator/main/si_lock.png">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root { --ink:#1f2430; --muted:#6b7280; --line:#e6e8f0; --si:#6366f1; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f5f6f8; color:var(--ink); padding:40px 16px; }
+  .wrap { max-width:1080px; margin:0 auto; }
+
+  /* Header */
+  .hdr { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .hdr .lock { height:30px; width:30px; }
+  .hdr .brand { font-weight:800; font-size:1.05em; color:var(--si); letter-spacing:-.01em; }
+  .hdr .dot { color:#cbd0e0; }
+  .hdr .kick { font-size:.8em; color:#9aa0b2; font-weight:600; }
+  h1 { font-size:2em; font-weight:900; letter-spacing:-.02em; margin-bottom:6px; }
+  .sub { color:var(--muted); font-size:.95em; margin-bottom:2px; }
+  .hint { color:#9aa0b2; font-size:.8em; margin-bottom:26px; }
+
+  /* Stepper */
+  .steps { display:flex; align-items:stretch; gap:8px; margin-bottom:22px; }
+  .step-wrap { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+  .step { width:100%; text-align:left; border:2px solid var(--line); background:#fff; border-radius:18px; cursor:pointer; overflow:hidden; transition:all .18s ease; font-family:inherit; }
+  .step:hover { border-color:#cfd4e8; box-shadow:0 6px 18px rgba(0,0,0,.07); }
+  .step.active { box-shadow:0 10px 26px rgba(0,0,0,.12); transform:translateY(-1px); }
+  .step .bar { height:6px; width:100%; }
+  .step .body { padding:15px 16px; }
+  .step .num { width:24px; height:24px; border-radius:50%; color:#fff; font-size:.75em; font-weight:800; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+  .step .ic { font-size:1.7em; margin-bottom:8px; }
+  .step .t { font-size:.98em; font-weight:800; line-height:1.25; margin-bottom:9px; letter-spacing:-.01em; }
+  .step .pill { display:inline-block; font-size:.7em; font-weight:800; padding:3px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em; }
+  .chev { color:#cbd0e0; flex-shrink:0; }
+  @media (max-width:760px){ .steps{ flex-direction:column; } .step-wrap{ flex-direction:column; } .chev{ transform:rotate(90deg); } }
+
+  /* Detail */
+  .detail { border:2px solid; border-radius:20px; background:#fff; padding:26px; box-shadow:0 4px 20px rgba(0,0,0,.05); }
+  .detail .dhead { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .detail .dic { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.4em; flex-shrink:0; }
+  .detail .dkick { font-size:.7em; font-weight:800; text-transform:uppercase; letter-spacing:.14em; }
+  .detail h2 { font-size:1.25em; font-weight:900; letter-spacing:-.01em; }
+  .detail .desc { color:#4b5568; font-size:.95em; line-height:1.6; margin-bottom:16px; max-width:760px; }
+  .detail ul { list-style:none; display:flex; flex-direction:column; gap:9px; margin-bottom:24px; }
+  .detail li { display:flex; align-items:flex-start; gap:10px; font-size:.92em; color:#39415a; }
+  .detail li .ck { margin-top:1px; width:18px; height:18px; border-radius:50%; color:#fff; font-size:.68em; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+  /* Screen frame (recreates the portal / convo / shopify screenshots) */
+  .screens { display:flex; flex-direction:column; gap:20px; }
+  .screen { background:linear-gradient(135deg,#171532 0%,#2f2f66 42%,#5866d6 100%); border-radius:18px; padding:22px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+  .screen-cap { color:rgba(255,255,255,.92); font-weight:800; font-size:.92em; letter-spacing:.01em; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .sc { background:#fff; border-radius:16px; padding:20px 22px; box-shadow:0 10px 30px rgba(20,16,40,.25); }
+  .sc + .sc { margin-top:16px; }
+  .sc-title { display:flex; align-items:center; gap:9px; font-weight:800; font-size:1em; color:#20242e; margin-bottom:14px; }
+  .sc-title .si { color:var(--si); }
+  .sc-sub { color:#8890a3; }
+
+  /* Claims table */
+  .ctable { width:100%; border-collapse:collapse; }
+  .ctable th { text-align:left; font-size:.72em; font-weight:800; color:var(--si); text-transform:uppercase; letter-spacing:.03em; padding:6px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  .ctable td { font-size:.82em; color:#2b3040; padding:14px 10px; white-space:nowrap; }
+  .badge { display:inline-block; font-size:.74em; font-weight:700; padding:3px 12px; border-radius:20px; text-transform:lowercase; }
+  .badge.pending { color:#d97706; border:1px solid #f0b354; background:#fff8ec; }
+  .badge.approved { color:#0e9f6e; border:1px solid #7bd8b0; background:#eafaf2; }
+  .viewbtn { font-size:.78em; font-weight:600; color:var(--si); border:1px solid #c7ccf0; border-radius:20px; padding:5px 14px; background:#fff; }
+
+  /* Claim details grid */
+  .cd-grid { display:grid; grid-template-columns:1fr 1fr; gap:26px 40px; }
+  .cd-row { display:grid; grid-template-columns:150px 1fr; gap:10px; align-items:start; margin-bottom:20px; }
+  .cd-row:last-child { margin-bottom:0; }
+  .cd-k { font-size:.86em; color:#5b6577; }
+  .cd-v { font-size:.86em; color:#20242e; font-weight:500; display:flex; align-items:center; gap:8px; }
+  .cd-v.strong { font-weight:800; }
+  .copy { color:#c2c7d6; font-size:.9em; cursor:default; }
+  .thumb { width:96px; height:118px; border-radius:8px; background:linear-gradient(160deg,#9aa0b0,#6b7280); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.6em; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+  .ok { color:#12b76a; }
+  .lnk { color:var(--si); font-weight:600; }
+
+  /* two small cards row */
+  .sc-half-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:720px){ .cd-grid,.sc-half-row{ grid-template-columns:1fr; } .cd-row{ grid-template-columns:130px 1fr; } }
+
+  /* Convo */
+  .cv-line { height:1px; background:var(--line); margin:0 -22px 14px; }
+  .cv-meta { display:grid; grid-template-columns:120px 1fr; gap:10px; padding:8px 0; font-size:.85em; }
+  .cv-meta .k { color:var(--si); font-weight:600; }
+  .cv-meta .v { color:#3a4256; }
+  .cv-tags { display:flex; gap:8px; }
+  .cv-tag { font-size:.76em; background:#eef0f4; color:#4b5568; border-radius:16px; padding:3px 12px; font-weight:600; }
+  .cv-badges { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .cv-b { font-size:.72em; border-radius:16px; padding:3px 10px; font-weight:600; }
+  .cv-b.front { border:1px solid #c7ccf0; color:var(--si); }
+  .cv-b.arch { background:#eef0f4; color:#6b7280; }
+  .cv-b.date { background:#f3ecff; color:#7c4dd6; }
+  .cv-msg { border-left:4px solid var(--si); background:#f7f8fb; border-radius:8px; padding:16px 18px; margin-top:8px; }
+  .cv-msg-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .cv-from { font-weight:800; font-size:.95em; }
+  .cv-addr { color:#98a0b3; font-size:.82em; margin-top:2px; }
+  .cv-dir { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .cv-out { background:var(--si); color:#fff; font-size:.72em; font-weight:700; padding:3px 11px; border-radius:16px; }
+  .cv-time { color:#98a0b3; font-size:.8em; }
+  .cv-body { font-size:.9em; color:#2b3040; line-height:1.6; }
+  .cv-body p { margin:0 0 12px; }
+  .cv-body p:last-child { margin:0; }
+
+  /* Shopify */
+  .shopify { display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
+  @media (max-width:820px){ .shopify{ grid-template-columns:1fr; } }
+  .tl { position:relative; padding-left:6px; }
+  .tl-day { font-size:.8em; color:#6b7280; margin:14px 0 8px; }
+  .tl-item { display:flex; align-items:flex-start; gap:12px; padding:8px 0; position:relative; }
+  .tl-dot { width:9px; height:9px; border-radius:50%; background:#1f2430; margin-top:5px; flex-shrink:0; }
+  .tl-ic { width:22px; height:22px; border-radius:5px; background:#eef0f4; display:flex; align-items:center; justify-content:center; font-size:.8em; flex-shrink:0; }
+  .tl-txt { font-size:.84em; color:#2b3040; flex:1; line-height:1.45; }
+  .tl-txt .mono { color:var(--si); font-weight:600; }
+  .tl-time { font-size:.8em; color:#98a0b3; white-space:nowrap; }
+  .sh-ord-head { display:flex; align-items:center; gap:8px; font-weight:800; margin-bottom:4px; }
+  .sh-status { font-size:.72em; background:#eef0f4; color:#4b5568; border-radius:14px; padding:2px 9px; font-weight:600; }
+  .sh-when { font-size:.8em; color:#8890a3; margin-bottom:14px; }
+  .sh-ful { border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .sh-ful-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .sh-tag { font-size:.72em; background:#eef0f4; color:#3a4256; border-radius:8px; padding:3px 9px; font-weight:600; display:inline-flex; align-items:center; gap:5px; }
+  .sh-fno { margin-left:auto; font-size:.78em; color:#8890a3; font-weight:600; }
+  .sh-meta { font-size:.8em; color:#5b6577; margin-bottom:4px; display:flex; align-items:center; gap:6px; }
+  .sh-item { display:flex; align-items:center; gap:12px; padding-top:12px; margin-top:10px; border-top:1px solid var(--line); }
+  .sh-thumb { width:40px; height:40px; border-radius:8px; background:#0f1020; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sh-thumb img { width:26px; height:26px; }
+  .sh-iname { font-size:.85em; font-weight:700; color:#20242e; }
+  .sh-ivar { font-size:.76em; color:#8890a3; }
+  .sh-iprice { text-align:right; font-size:.82em; color:#20242e; white-space:nowrap; }
+  .strike { color:#b0b6c4; text-decoration:line-through; }
+  .sh-pay { border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .sh-pay-row { display:flex; justify-content:space-between; font-size:.84em; color:#3a4256; padding:5px 0; }
+  .sh-pay-row.total { font-weight:800; color:#20242e; border-top:1px solid var(--line); margin-top:4px; padding-top:9px; }
+  .note-info { display:flex; align-items:center; gap:8px; font-size:.82em; color:#5b6577; }
+  .note-info .i { width:16px; height:16px; border-radius:50%; background:var(--si); color:#fff; font-size:.7em; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0; }
+
+  .footer { margin-top:22px; background:#eef2ff; border:1px solid #dfe4ff; border-radius:14px; padding:16px 20px; font-size:.9em; color:#4338ca; line-height:1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <img class="lock" src="https://raw.githubusercontent.com/drewshafe/si-roi-calculator/main/si_lock.png" alt="ShipInsure">
+    <span class="brand">ShipInsure</span>
+    <span class="dot">·</span>
+    <span class="kick">How a claim works</span>
+  </div>
+  <h1>From claim to reshipment — start to finish</h1>
+  <p class="sub">Here's exactly what a customer's claim looks like at each stage, from the ShipInsure portal to the reship order landing in the merchant's Shopify.</p>
+  <p class="hint">Click any step to see what happens.</p>
+
+  <div class="steps" id="steps"></div>
+  <div id="detailHost"></div>
+
+  <div class="footer" id="footer"></div>
+</div>
+
+<script>
+const LOCK = 'https://raw.githubusercontent.com/drewshafe/si-roi-calculator/main/si_lock.png';
+
+// ── Recreated screens ──────────────────────────────────────────────
+function portal(status) {
+  const isApproved = status === 'approved';
+  const badge = isApproved
+    ? '<span class="badge approved">approved</span>'
+    : '<span class="badge pending">pending</span>';
+  const claimRes = isApproved ? 'reship' : '';
+  const closedAt = isApproved ? '04/17/26' : '';
+  return `
+  <div class="sc">
+    <div class="sc-title"><span class="si">≣</span> Order Claims</div>
+    <div style="overflow-x:auto;">
+    <table class="ctable">
+      <thead><tr>
+        <th>Created At</th><th>Reason</th><th>Status</th><th>Preferred Resolution</th>
+        <th>Claim Resolution</th><th>Closed At</th><th style="text-align:right;">Actions</th>
+      </tr></thead>
+      <tbody><tr>
+        <td>04/16/26</td><td>Damaged</td><td>${badge}</td><td>Reship</td>
+        <td>${claimRes}</td><td>${closedAt}</td>
+        <td style="text-align:right;"><span class="viewbtn">View Claim</span></td>
+      </tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="sc">
+    <div class="sc-title"><span class="si">▤</span> Claim Details</div>
+    <div class="cd-grid">
+      <div>
+        <div class="cd-row"><div class="cd-k">Submitted At:</div><div class="cd-v">04/16/26 <span class="copy">⧉</span></div></div>
+        <div class="cd-row"><div class="cd-k">Claim Reason:</div><div class="cd-v">Damaged</div></div>
+        <div class="cd-row"><div class="cd-k">Additional Info:</div><div class="cd-v">The bezel is cracked!</div></div>
+      </div>
+      <div>
+        <div class="cd-row"><div class="cd-k">Order Coverage:</div><div class="cd-v">$252.95 <span class="copy">⧉</span></div></div>
+        <div class="cd-row"><div class="cd-k">Preferred Resolution:</div><div class="cd-v strong">Reship</div></div>
+        <div class="cd-row"><div class="cd-k">Images:</div><div class="cd-v"><span class="thumb">⌚</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sc-half-row">
+    <div class="sc">
+      <div class="sc-title"><span class="si">🛒</span> Order Summary</div>
+      <div class="cd-row"><div class="cd-k">Order #:</div><div class="cd-v"><span class="lnk">#12345 ↗</span> <span class="copy">⧉</span></div></div>
+      <div class="cd-row"><div class="cd-k">Order URL:</div><div class="cd-v"><span class="lnk">Customer View ↗</span></div></div>
+      <div class="cd-row"><div class="cd-k">Date:</div><div class="cd-v">04/07/26 <span class="copy">⧉</span></div></div>
+      <div style="height:8px;"></div>
+      <div class="cd-row"><div class="cd-k">Covered ?</div><div class="cd-v"><span class="ok">✔</span></div></div>
+      <div class="cd-row"><div class="cd-k">Fee remitted:</div><div class="cd-v"><span class="ok">✔</span> <span class="lnk">View ↗</span></div></div>
+    </div>
+    <div class="sc">
+      <div class="sc-title" style="justify-content:space-between;"><span style="display:flex;align-items:center;gap:9px;"><span class="si">📍</span> Shipping Address</span>
+        <span class="note-info"><span class="i">i</span> No other claims for this customer</span>
+      </div>
+      <div class="cd-v" style="margin-bottom:12px;">Customer Name <span class="copy">⧉</span></div>
+      <div class="cd-v" style="align-items:flex-start;line-height:1.5;">1234 That Ln<br>Tucson, AZ, 85746<br>United States <span class="copy">⧉</span></div>
+    </div>
+  </div>`;
+}
+
+function convo(kind) {
+  const tags = kind === 'approved'
+    ? '<span class="cv-tag">Reshipped</span><span class="cv-tag">Inbox</span>'
+    : '<span class="cv-tag">Inbox</span>';
+  const body = kind === 'approved'
+    ? `<p>Hello Ned,</p>
+       <p>Thank you so much for reaching out to us!</p>
+       <p>We're happy to approve your claim for reshipment. You should receive a confirmation message shortly.</p>
+       <p>A reshipment order will be automatically created with the merchant, and you can expect a confirmation email for that order.</p>
+       <p>Let us know if you need anything else. Have a wonderful day!</p>`
+    : `<p>Hello Ned,</p>
+       <p>Thank you so much for reaching out to us!</p>
+       <p>To proceed with your claim, please provide a photo of both the inside and outside of the package the items arrived in.</p>
+       <p>We look forward to hearing back from you.</p>`;
+  return `
+  <div class="sc">
+    <div class="sc-title"><span class="si">✉</span> ShipInsure Customer Service Conversations (1)</div>
+    <div class="cv-line"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+      <div style="font-weight:700;color:#20242e;"><span class="si">✉</span>&nbsp; Claim #EXAMPLE1234</div>
+      <div class="cv-badges"><span class="cv-b front">Front</span><span class="cv-b arch">archived</span><span class="cv-b date">04/16/26 19:10</span><span class="cv-time">1 message ⌄</span></div>
+    </div>
+    <div class="cv-meta"><div class="k">Created</div><div class="v">04/16/26 19:10</div></div>
+    <div class="cv-meta"><div class="k">Tags</div><div class="v"><div class="cv-tags">${tags}</div></div></div>
+    <div class="cv-msg">
+      <div class="cv-msg-head">
+        <div><div class="cv-from">Claim #EXAMPLE1234</div><div class="cv-addr">From care@shipinsure.io to nedflanders@gmail.com</div></div>
+        <div class="cv-dir"><span class="cv-out">Outbound</span><span class="cv-time">04/16/26 19:10</span></div>
+      </div>
+      <div class="cv-body">${body}</div>
+    </div>
+  </div>`;
+}
+
+function shopify() {
+  return `
+  <div class="sc">
+    <div class="shopify">
+      <div class="tl">
+        <div class="tl-day">April 21</div>
+        <div class="tl-item"><span class="tl-dot"></span><span class="tl-ic">📦</span><span class="tl-txt">BlueBox marked 1 item as fulfilled from Warehouse - Tool.</span><span class="tl-time">11:43 AM</span></div>
+        <div class="tl-day">April 16</div>
+        <div class="tl-item"><span class="tl-dot"></span><span class="tl-ic">🔀</span><span class="tl-txt">Flow Platform marked 1 item as fulfilled from Warehouse - Tool.</span><span class="tl-time">6:10 PM</span></div>
+        <div class="tl-item"><span class="tl-dot"></span><span class="tl-ic">🧊</span><span class="tl-txt">Confirmation <span class="mono">#EXAMPLE</span> was generated for this order.</span><span class="tl-time">6:10 PM</span></div>
+        <div class="tl-item"><span class="tl-dot"></span><span class="tl-ic">🧊</span><span class="tl-txt">ShipInsure Shipping Protection created this order for Ned Flanders from draft order <span class="mono">#EX1234</span>.</span><span class="tl-time"></span></div>
+      </div>
+      <div>
+        <div class="sh-ord-head">▧ #EX1234 <span class="sh-status">● Paid</span> <span class="sh-status">● Fulfilled</span></div>
+        <div class="sh-when">April 16, 2026 at 6:10 pm from ShipInsure Shipping Protection (via import) for Example Merchant</div>
+
+        <div class="sh-ful">
+          <div class="sh-ful-head"><span class="sh-tag">✅ Fulfilled</span><span class="sh-tag">📍 Warehouse - Tool</span><span class="sh-fno">#EX1234-F1</span></div>
+          <div class="sh-meta">🗓 April 16, 2026</div>
+          <div class="sh-meta">🚫 Shipping not required</div>
+          <div class="sh-item">
+            <span class="sh-thumb"><img src="${LOCK}" alt=""></span>
+            <div style="flex:1;"><div class="sh-iname">ShipInsure Package Protection</div><div class="sh-ivar">4.68 · SI_LEVEL_123-130</div></div>
+            <div class="sh-iprice">$0.00 <span style="color:#98a0b3;">× 1</span><br><span class="strike">$4.68</span> &nbsp;$0.00</div>
+          </div>
+        </div>
+
+        <div class="sh-ful">
+          <div class="sh-ful-head"><span class="sh-tag">✅ Fulfilled</span><span class="sh-tag">📍 Warehouse - Tool</span><span class="sh-fno">#EX1234-F1</span></div>
+          <div class="sh-meta">🗓 April 21, 2026</div>
+          <div class="sh-meta">🏷 Amazon tracking: <span class="lnk">12345678910</span></div>
+          <div class="sh-item">
+            <span class="sh-thumb" style="background:#3a2a1a;">⌚</span>
+            <div style="flex:1;"><div class="sh-iname">Sapele Black Barrel 42mm</div><div class="sh-ivar">SAPELE BLACK · OG-11-104</div></div>
+            <div class="sh-iprice">$0.00 <span style="color:#98a0b3;">× 1</span><br><span class="strike">$199.00</span> &nbsp;$0.00</div>
+          </div>
+        </div>
+
+        <div class="sh-pay">
+          <div class="sh-pay-row"><span>Subtotal · 2 items</span><span>$0.00</span></div>
+          <div class="sh-pay-row"><span>Shipping · Ground Shipping (4–7 business days)</span><span>$0.00</span></div>
+          <div class="sh-pay-row total"><span>Total</span><span>$0.00</span></div>
+          <div class="sh-pay-row"><span>Paid</span><span>$0.00</span></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Steps ──────────────────────────────────────────────────────────
+const STEPS = [
+  {
+    id:1, icon:'📝', title:'Claim Submitted', pill:'pending review',
+    accent:'#f59e0b', light:'#fff7ed',
+    headline:'The customer files a claim in the ShipInsure portal',
+    desc:"When a package is lost, damaged, or stolen, the customer submits a claim through ShipInsure — reason, details, photos, and a preferred resolution. It lands as a pending claim. The merchant does nothing here; ShipInsure's CS team takes it from here and follows up directly with the customer for anything it needs (like package photos).",
+    points:[
+      'Claim shows as pending with the customer’s preferred resolution (e.g. Reship)',
+      'Full claim details captured: reason, coverage, photos, order + shipping info',
+      'ShipInsure CS emails the customer directly for any missing evidence',
+    ],
+    screens:[
+      { cap:'SI Portal — Submitted Claim', html:()=>portal('pending') },
+      { cap:'ShipInsure CS conversation', html:()=>convo('pending') },
+    ],
+  },
+  {
+    id:2, icon:'✅', title:'Claim Approved', pill:'reship authorized',
+    accent:'#10b981', light:'#ecfdf5',
+    headline:'ShipInsure reviews and approves the claim',
+    desc:'Once the evidence checks out, ShipInsure approves the claim — no coverage decision falls on the merchant. The claim flips to approved, the resolution is set to reship, and it’s closed out. The customer gets a confirmation email letting them know a replacement is on the way.',
+    points:[
+      'Status → approved, Claim Resolution → reship, Closed At stamped',
+      'Customer is emailed that the reshipment is approved',
+      'A reshipment order is created automatically with the merchant',
+    ],
+    screens:[
+      { cap:'SI Portal — Approved Claim', html:()=>portal('approved') },
+      { cap:'ShipInsure CS conversation', html:()=>convo('approved') },
+    ],
+  },
+  {
+    id:3, icon:'📦', title:'Reship Order Placed', pill:'in shopify',
+    accent:'#6366f1', light:'#eef2ff',
+    headline:'A replacement order is auto-created in the merchant’s Shopify',
+    desc:'ShipInsure creates the reshipment as a real Shopify order from a draft — at $0.00 to the customer — and it flows through the merchant’s normal fulfillment. The merchant just fulfills it like any other order; ShipInsure reimburses the cost on the weekly settlement.',
+    points:[
+      'Order created by “ShipInsure Shipping Protection” from a draft order',
+      'Line items at $0.00 (original prices shown struck-through)',
+      'Fulfills through the merchant’s normal warehouse + tracking flow',
+    ],
+    screens:[
+      { cap:'Shopify Backend — Reshipped Order', html:()=>shopify() },
+    ],
+  },
+];
+
+let active = 1;
+const stepsEl = document.getElementById('steps');
+const host = document.getElementById('detailHost');
+const footer = document.getElementById('footer');
+footer.innerHTML = '<b>The merchant never adjudicates coverage.</b> ShipInsure handles the claim end-to-end and hands back a ready-to-fulfill reship order — then reimburses the cost on the weekly invoice.';
+
+function renderSteps() {
+  stepsEl.innerHTML = STEPS.map((s, i) => `
+    <div class="step-wrap">
+      <button class="step ${active===s.id?'active':''}" onclick="selectStep(${s.id})"
+        style="${active===s.id?`border-color:${s.accent};background:${s.light};`:''}">
+        <div class="bar" style="background:linear-gradient(90deg,${s.accent},${s.accent}bb);"></div>
+        <div class="body">
+          <div class="num" style="background:${s.accent};">${s.id}</div>
+          <div class="ic">${s.icon}</div>
+          <div class="t">${s.title}</div>
+          <span class="pill" style="background:${s.accent}22;color:${s.accent};">${s.pill}</span>
+        </div>
+      </button>
+      ${i < STEPS.length-1 ? '<span class="chev">›</span>' : ''}
+    </div>`).join('');
+}
+
+function renderDetail() {
+  const s = STEPS.find(x => x.id === active);
+  host.innerHTML = `
+    <div class="detail" style="border-color:${s.accent}55;">
+      <div class="dhead">
+        <div class="dic" style="background:${s.light};">${s.icon}</div>
+        <div><div class="dkick" style="color:${s.accent};">Step ${s.id}</div><h2>${s.headline}</h2></div>
+      </div>
+      <p class="desc">${s.desc}</p>
+      <ul>${s.points.map(p=>`<li><span class="ck" style="background:${s.accent};">✓</span>${p}</li>`).join('')}</ul>
+      <div class="screens">
+        ${s.screens.map(sc=>`<div class="screen"><div class="screen-cap">🖥 ${sc.cap}</div>${sc.html()}</div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function selectStep(id){ active = id; renderSteps(); renderDetail(); window.scrollTo({top:0,behavior:'smooth'}); }
+renderSteps(); renderDetail();
+</script>
+</body>
+</html>
